@@ -7,17 +7,15 @@ import { useEffect, useRef, useState } from "react";
 const messages = [
   "stay here",
   "breathe",
-  "focus returns",
   "you are present",
   "quiet mind",
-  "keep going",
   "nothing urgent",
+  "focus returns",
   "reset",
   "observe",
+  "keep going",
   "soft silence",
-  "continue",
-  "just one step",
-  "you are okay",
+  "just continue",
 ];
 
 /* ---------------- TYPES ---------------- */
@@ -27,7 +25,6 @@ type Floating = {
   text: string;
   x: number;
   y: number;
-  opacity: number;
 };
 
 type Task = {
@@ -38,25 +35,18 @@ type Task = {
 export default function Home() {
   /* ---------------- STATE ---------------- */
 
-  const [message, setMessage] = useState("");
-  const [rain, setRain] = useState(false);
+  const [rainOn, setRainOn] = useState(false); // TRUE = дождь идёт
   const [deepFocus, setDeepFocus] = useState(false);
-
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [input, setInput] = useState("");
 
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
 
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [input, setInput] = useState("");
+
   const [floating, setFloating] = useState<Floating[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  /* ---------------- INIT MESSAGE ---------------- */
-
-  useEffect(() => {
-    setMessage(messages[Math.floor(Math.random() * messages.length)]);
-  }, []);
 
   /* ---------------- TIMER ---------------- */
 
@@ -64,7 +54,7 @@ export default function Home() {
     if (!running) return;
 
     const t = setInterval(() => {
-      setTime((prev) => (prev > 0 ? prev - 1 : 0));
+      setTime((p) => (p > 0 ? p - 1 : 0));
     }, 1000);
 
     return () => clearInterval(t);
@@ -78,42 +68,26 @@ export default function Home() {
       .padStart(2, "0")}`;
   };
 
-  /* ---------------- FLOATING BACKGROUND TEXT ---------------- */
+  /* ---------------- FLOATING TEXT ---------------- */
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const item: Floating = {
-        id: Date.now() + Math.random(),
-        text: messages[Math.floor(Math.random() * messages.length)],
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        opacity: 0,
-      };
+      const id = Date.now() + Math.random();
 
-      setFloating((prev) => [...prev, item].slice(-40));
-
-      setTimeout(() => {
-        setFloating((prev) =>
-          prev.map((m) =>
-            m.id === item.id ? { ...m, opacity: 0.18 } : m
-          )
-        );
-      }, 50);
+      setFloating((prev) => [
+        ...prev,
+        {
+          id,
+          text: messages[Math.floor(Math.random() * messages.length)],
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+        },
+      ].slice(-50));
 
       setTimeout(() => {
-        setFloating((prev) =>
-          prev.map((m) =>
-            m.id === item.id ? { ...m, opacity: 0 } : m
-          )
-        );
-      }, 3500);
-
-      setTimeout(() => {
-        setFloating((prev) =>
-          prev.filter((m) => m.id !== item.id)
-        );
-      }, 4500);
-    }, 1200);
+        setFloating((prev) => prev.filter((f) => f.id !== id));
+      }, 6000);
+    }, 900);
 
     return () => clearInterval(interval);
   }, []);
@@ -134,6 +108,26 @@ export default function Home() {
     );
   };
 
+  /* ---------------- RAIN TOGGLE (FIXED LOGIC) ---------------- */
+  const toggleRain = async () => {
+    setRainOn((prev) => {
+      const next = !prev;
+
+      const audio = audioRef.current;
+
+      if (audio) {
+        if (next) {
+          audio.volume = 0.4;
+          audio.play().catch(() => {});
+        } else {
+          audio.pause();
+        }
+      }
+
+      return next;
+    });
+  };
+
   /* ---------------- UI ---------------- */
 
   return (
@@ -148,15 +142,14 @@ export default function Home() {
         overflow: "hidden",
       }}
     >
-      {/* ---------------- AUDIO ---------------- */}
+      {/* AUDIO */}
 
       <audio ref={audioRef} loop preload="auto">
         <source src="/rain.mp3" type="audio/mpeg" />
       </audio>
 
-      {/* ---------------- RAIN VISUAL ---------------- */}
-
-      {rain && (
+      {/* RAIN VISUAL */}
+      {rainOn && (
         <div
           style={{
             position: "absolute",
@@ -168,8 +161,7 @@ export default function Home() {
         />
       )}
 
-      {/* ---------------- FLOATING TEXT ---------------- */}
-
+      {/* FLOATING TEXT */}
       {floating.map((m) => (
         <div
           key={m.id}
@@ -178,19 +170,17 @@ export default function Home() {
             left: `${m.x}%`,
             top: `${m.y}%`,
             transform: "translate(-50%, -50%)",
-            fontSize: 12,
-            opacity: m.opacity,
-            transition: "opacity 1.5s ease",
+            fontSize: 13,
+            opacity: 0.18,
+            color: "rgba(255,255,255,0.7)",
             pointerEvents: "none",
-            whiteSpace: "nowrap",
           }}
         >
           {m.text}
         </div>
       ))}
 
-      {/* ---------------- CENTER ---------------- */}
-
+      {/* CENTER */}
       <div
         style={{
           position: "relative",
@@ -205,8 +195,7 @@ export default function Home() {
       >
         <h1 style={{ fontWeight: 300 }}>let’s focus</h1>
 
-        {/* ---------------- DEEP FOCUS ---------------- */}
-
+        {/* DEEP FOCUS */}
         {deepFocus ? (
           <>
             <div style={{ fontSize: 44 }}>{format(time)}</div>
@@ -223,8 +212,6 @@ export default function Home() {
           </>
         ) : (
           <>
-            <p style={{ opacity: 0.7 }}>{message}</p>
-
             <div style={{ fontSize: 28 }}>{format(time)}</div>
 
             <div style={{ display: "flex", gap: 8 }}>
@@ -236,27 +223,8 @@ export default function Home() {
             {/* CONTROLS */}
 
             <div style={{ display: "flex", gap: 8 }}>
-              <button
-                onClick={() => {
-                  setRain((r) => {
-                    const next = !r;
-
-                    const audio = audioRef.current;
-
-                    if (audio) {
-                      if (next) {
-                        audio.volume = 0.4;
-                        audio.play().catch(() => {});
-                      } else {
-                        audio.pause();
-                      }
-                    }
-
-                    return next;
-                  });
-                }}
-              >
-                rain: {rain ? "on" : "off"}
+              <button onClick={toggleRain}>
+                {rainOn ? "TURN OFF RAIN" : "TURN ON RAIN"}
               </button>
 
               <button onClick={() => setDeepFocus(true)}>
@@ -270,10 +238,9 @@ export default function Home() {
               style={{
                 marginTop: 20,
                 width: 320,
-                background: "rgba(255,255,255,0.06)",
+                background: "rgba(255,255,255,0.05)",
                 padding: 12,
                 borderRadius: 10,
-                backdropFilter: "blur(8px)",
               }}
             >
               <div style={{ display: "flex", gap: 6 }}>
@@ -281,34 +248,25 @@ export default function Home() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="add task..."
-                  style={{
-                    flex: 1,
-                    padding: 8,
-                    background: "rgba(0,0,0,0.4)",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    color: "white",
-                  }}
+                  style={{ flex: 1 }}
                 />
                 <button onClick={addTask}>+</button>
               </div>
 
-              <div style={{ marginTop: 10 }}>
-                {tasks.map((t, i) => (
-                  <div
-                    key={i}
-                    onClick={() => toggleTask(i)}
-                    style={{
-                      fontSize: 13,
-                      marginTop: 6,
-                      opacity: t.done ? 0.4 : 0.9,
-                      textDecoration: t.done ? "line-through" : "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {t.text}
-                  </div>
-                ))}
-              </div>
+              {tasks.map((t, i) => (
+                <div
+                  key={i}
+                  onClick={() => toggleTask(i)}
+                  style={{
+                    marginTop: 6,
+                    textDecoration: t.done ? "line-through" : "none",
+                    opacity: t.done ? 0.4 : 1,
+                    cursor: "pointer",
+                  }}
+                >
+                  {t.text}
+                </div>
+              ))}
             </div>
           </>
         )}

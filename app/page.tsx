@@ -2,20 +2,34 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* ---------------- TEXTS ---------------- */
+/* ---------------- PHRASES (25) ---------------- */
 
 const messages = [
-  "stay here",
   "breathe",
-  "you are present",
-  "quiet mind",
-  "nothing urgent",
+  "stay here",
+  "you are safe",
   "focus returns",
-  "reset",
+  "quiet mind",
+  "no rush",
   "observe",
-  "keep going",
-  "soft silence",
+  "let it pass",
   "just continue",
+  "soft silence",
+  "reset",
+  "you are present",
+  "nothing urgent",
+  "one step",
+  "keep going",
+  "slow down",
+  "be still",
+  "it’s okay",
+  "trust the process",
+  "you’re doing fine",
+  "calm space",
+  "let go",
+  "return",
+  "focus again",
+  "now",
 ];
 
 /* ---------------- TYPES ---------------- */
@@ -35,7 +49,7 @@ type Task = {
 export default function Home() {
   /* ---------------- STATE ---------------- */
 
-  const [rainOn, setRainOn] = useState(false); // TRUE = дождь идёт
+  const [rainOn, setRainOn] = useState(false);
   const [deepFocus, setDeepFocus] = useState(false);
 
   const [time, setTime] = useState(30 * 60);
@@ -71,18 +85,22 @@ export default function Home() {
   /* ---------------- FLOATING TEXT ---------------- */
 
   useEffect(() => {
+    if (deepFocus) return; // 🚫 ключевая блокировка
+
     const interval = setInterval(() => {
       const id = Date.now() + Math.random();
 
-      setFloating((prev) => [
-        ...prev,
-        {
-          id,
-          text: messages[Math.floor(Math.random() * messages.length)],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-        },
-      ].slice(-50));
+      setFloating((prev) =>
+        [
+          ...prev,
+          {
+            id,
+            text: messages[Math.floor(Math.random() * messages.length)],
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+          },
+        ].slice(-60)
+      );
 
       setTimeout(() => {
         setFloating((prev) => prev.filter((f) => f.id !== id));
@@ -90,7 +108,15 @@ export default function Home() {
     }, 900);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [deepFocus]);
+
+  /* ---------------- CLEANUP ON DEEP FOCUS ---------------- */
+
+  useEffect(() => {
+    if (deepFocus) {
+      setFloating([]); // сразу чистим экран
+    }
+  }, [deepFocus]);
 
   /* ---------------- TASKS ---------------- */
 
@@ -108,11 +134,11 @@ export default function Home() {
     );
   };
 
-  /* ---------------- RAIN TOGGLE (FIXED LOGIC) ---------------- */
-  const toggleRain = async () => {
+  /* ---------------- RAIN ---------------- */
+
+  const toggleRain = () => {
     setRainOn((prev) => {
       const next = !prev;
-
       const audio = audioRef.current;
 
       if (audio) {
@@ -143,7 +169,6 @@ export default function Home() {
       }}
     >
       {/* AUDIO */}
-
       <audio ref={audioRef} loop preload="auto">
         <source src="/rain.mp3" type="audio/mpeg" />
       </audio>
@@ -171,7 +196,7 @@ export default function Home() {
             top: `${m.y}%`,
             transform: "translate(-50%, -50%)",
             fontSize: 13,
-            opacity: 0.18,
+            opacity: 0.2,
             color: "rgba(255,255,255,0.7)",
             pointerEvents: "none",
           }}
@@ -220,8 +245,6 @@ export default function Home() {
               <button onClick={() => setTime(30 * 60)}>reset</button>
             </div>
 
-            {/* CONTROLS */}
-
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={toggleRain}>
                 {rainOn ? "TURN OFF RAIN" : "TURN ON RAIN"}
@@ -233,7 +256,6 @@ export default function Home() {
             </div>
 
             {/* TASKS */}
-
             <div
               style={{
                 marginTop: 20,

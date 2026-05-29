@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ---------------- TEXTS ---------------- */
 
@@ -8,18 +8,14 @@ const messages = [
   "stay here",
   "breathe",
   "focus returns",
-  "no distractions",
   "you are present",
   "quiet mind",
   "keep going",
-  "observe",
-  "reset",
-  "calm state",
-  "just continue",
-  "soft silence",
-  "you are okay",
-  "work gently",
   "nothing urgent",
+  "reset",
+  "observe",
+  "soft silence",
+  "continue",
 ];
 
 /* ---------------- TYPES ---------------- */
@@ -33,7 +29,8 @@ export default function Home() {
   /* ---------------- STATE ---------------- */
 
   const [message, setMessage] = useState("");
-  const [rain, setRain] = useState(true);
+
+  const [rain, setRain] = useState(false);
   const [deepFocus, setDeepFocus] = useState(false);
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -41,6 +38,8 @@ export default function Home() {
 
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   /* ---------------- INIT MESSAGE ---------------- */
 
@@ -98,7 +97,13 @@ export default function Home() {
         overflow: "hidden",
       }}
     >
-      {/* ---------------- RAIN ---------------- */}
+      {/* ---------------- AUDIO ---------------- */}
+
+      <audio ref={audioRef} loop>
+        <source src="/rain.mp3" type="audio/mpeg" />
+      </audio>
+
+      {/* ---------------- RAIN VISUAL ---------------- */}
 
       {rain && (
         <div
@@ -106,7 +111,7 @@ export default function Home() {
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "repeating-linear-gradient(transparent, transparent 3px, rgba(255,255,255,0.06) 4px)",
+              "repeating-linear-gradient(transparent, transparent 3px, rgba(255,255,255,0.07) 4px)",
             pointerEvents: "none",
           }}
         />
@@ -128,79 +133,117 @@ export default function Home() {
       >
         <h1 style={{ fontWeight: 300 }}>let’s focus</h1>
 
-        <p style={{ opacity: 0.7 }}>{message}</p>
+        {/* ---------------- DEEP FOCUS MODE ---------------- */}
 
-        {/* TIMER */}
+        {deepFocus ? (
+          <>
+            <div style={{ fontSize: 44 }}>
+              {format(time)}
+            </div>
 
-        <div style={{ fontSize: 28 }}>
-          {format(time)}
-        </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setRunning(true)}>start</button>
+              <button onClick={() => setRunning(false)}>pause</button>
+              <button onClick={() => setTime(30 * 60)}>reset</button>
+            </div>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setRunning(true)}>start</button>
-          <button onClick={() => setRunning(false)}>pause</button>
-          <button onClick={() => setTime(30 * 60)}>reset</button>
-        </div>
+            <button
+              onClick={() => setDeepFocus(false)}
+              style={{ marginTop: 10 }}
+            >
+              exit deep focus
+            </button>
+          </>
+        ) : (
+          <>
+            {/* NORMAL MODE */}
 
-        {/* CONTROLS */}
+            <p style={{ opacity: 0.7 }}>{message}</p>
 
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setRain((r) => !r)}>
-            rain: {rain ? "on" : "off"}
-          </button>
+            <div style={{ fontSize: 28 }}>{format(time)}</div>
 
-          <button onClick={() => setDeepFocus((d) => !d)}>
-            deep focus: {deepFocus ? "on" : "off"}
-          </button>
-        </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setRunning(true)}>start</button>
+              <button onClick={() => setRunning(false)}>pause</button>
+              <button onClick={() => setTime(30 * 60)}>reset</button>
+            </div>
 
-        {/* TASKS */}
+            {/* CONTROLS */}
 
-        {!deepFocus && (
-          <div
-            style={{
-              marginTop: 20,
-              width: 320,
-              background: "rgba(255,255,255,0.06)",
-              padding: 12,
-              borderRadius: 10,
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <div style={{ display: "flex", gap: 6 }}>
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="add task..."
-                style={{
-                  flex: 1,
-                  padding: 8,
-                  background: "rgba(0,0,0,0.4)",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  color: "white",
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => {
+                  setRain((r) => {
+                    const next = !r;
+
+                    if (audioRef.current) {
+                      if (next) {
+                        audioRef.current.volume = 0.4;
+                        audioRef.current.play();
+                      } else {
+                        audioRef.current.pause();
+                      }
+                    }
+
+                    return next;
+                  });
                 }}
-              />
-              <button onClick={addTask}>+</button>
+              >
+                rain: {rain ? "on" : "off"}
+              </button>
+
+              <button onClick={() => setDeepFocus(true)}>
+                deep focus
+              </button>
             </div>
 
-            <div style={{ marginTop: 10 }}>
-              {tasks.map((t, i) => (
-                <div
-                  key={i}
-                  onClick={() => toggleTask(i)}
+            {/* TASKS */}
+
+            <div
+              style={{
+                marginTop: 20,
+                width: 320,
+                background: "rgba(255,255,255,0.06)",
+                padding: 12,
+                borderRadius: 10,
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              <div style={{ display: "flex", gap: 6 }}>
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="add task..."
                   style={{
-                    fontSize: 13,
-                    marginTop: 6,
-                    opacity: t.done ? 0.4 : 0.9,
-                    textDecoration: t.done ? "line-through" : "none",
-                    cursor: "pointer",
+                    flex: 1,
+                    padding: 8,
+                    background: "rgba(0,0,0,0.4)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    color: "white",
                   }}
-                >
-                  {t.text}
-                </div>
-              ))}
+                />
+                <button onClick={addTask}>+</button>
+              </div>
+
+              <div style={{ marginTop: 10 }}>
+                {tasks.map((t, i) => (
+                  <div
+                    key={i}
+                    onClick={() => toggleTask(i)}
+                    style={{
+                      fontSize: 13,
+                      marginTop: 6,
+                      opacity: t.done ? 0.4 : 0.9,
+                      textDecoration: t.done ? "line-through" : "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {t.text}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </main>

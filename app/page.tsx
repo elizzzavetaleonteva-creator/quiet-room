@@ -16,9 +16,19 @@ const messages = [
   "observe",
   "soft silence",
   "continue",
+  "just one step",
+  "you are okay",
 ];
 
 /* ---------------- TYPES ---------------- */
+
+type Floating = {
+  id: number;
+  text: string;
+  x: number;
+  y: number;
+  opacity: number;
+};
 
 type Task = {
   text: string;
@@ -29,7 +39,6 @@ export default function Home() {
   /* ---------------- STATE ---------------- */
 
   const [message, setMessage] = useState("");
-
   const [rain, setRain] = useState(false);
   const [deepFocus, setDeepFocus] = useState(false);
 
@@ -38,6 +47,8 @@ export default function Home() {
 
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
+
+  const [floating, setFloating] = useState<Floating[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -66,6 +77,46 @@ export default function Home() {
       .toString()
       .padStart(2, "0")}`;
   };
+
+  /* ---------------- FLOATING BACKGROUND TEXT ---------------- */
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const item: Floating = {
+        id: Date.now() + Math.random(),
+        text: messages[Math.floor(Math.random() * messages.length)],
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        opacity: 0,
+      };
+
+      setFloating((prev) => [...prev, item].slice(-40));
+
+      setTimeout(() => {
+        setFloating((prev) =>
+          prev.map((m) =>
+            m.id === item.id ? { ...m, opacity: 0.18 } : m
+          )
+        );
+      }, 50);
+
+      setTimeout(() => {
+        setFloating((prev) =>
+          prev.map((m) =>
+            m.id === item.id ? { ...m, opacity: 0 } : m
+          )
+        );
+      }, 3500);
+
+      setTimeout(() => {
+        setFloating((prev) =>
+          prev.filter((m) => m.id !== item.id)
+        );
+      }, 4500);
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, []);
 
   /* ---------------- TASKS ---------------- */
 
@@ -99,7 +150,7 @@ export default function Home() {
     >
       {/* ---------------- AUDIO ---------------- */}
 
-      <audio ref={audioRef} loop>
+      <audio ref={audioRef} loop preload="auto">
         <source src="/rain.mp3" type="audio/mpeg" />
       </audio>
 
@@ -117,6 +168,27 @@ export default function Home() {
         />
       )}
 
+      {/* ---------------- FLOATING TEXT ---------------- */}
+
+      {floating.map((m) => (
+        <div
+          key={m.id}
+          style={{
+            position: "absolute",
+            left: `${m.x}%`,
+            top: `${m.y}%`,
+            transform: "translate(-50%, -50%)",
+            fontSize: 12,
+            opacity: m.opacity,
+            transition: "opacity 1.5s ease",
+            pointerEvents: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {m.text}
+        </div>
+      ))}
+
       {/* ---------------- CENTER ---------------- */}
 
       <div
@@ -133,13 +205,11 @@ export default function Home() {
       >
         <h1 style={{ fontWeight: 300 }}>let’s focus</h1>
 
-        {/* ---------------- DEEP FOCUS MODE ---------------- */}
+        {/* ---------------- DEEP FOCUS ---------------- */}
 
         {deepFocus ? (
           <>
-            <div style={{ fontSize: 44 }}>
-              {format(time)}
-            </div>
+            <div style={{ fontSize: 44 }}>{format(time)}</div>
 
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={() => setRunning(true)}>start</button>
@@ -147,17 +217,12 @@ export default function Home() {
               <button onClick={() => setTime(30 * 60)}>reset</button>
             </div>
 
-            <button
-              onClick={() => setDeepFocus(false)}
-              style={{ marginTop: 10 }}
-            >
+            <button onClick={() => setDeepFocus(false)}>
               exit deep focus
             </button>
           </>
         ) : (
           <>
-            {/* NORMAL MODE */}
-
             <p style={{ opacity: 0.7 }}>{message}</p>
 
             <div style={{ fontSize: 28 }}>{format(time)}</div>
@@ -176,12 +241,14 @@ export default function Home() {
                   setRain((r) => {
                     const next = !r;
 
-                    if (audioRef.current) {
+                    const audio = audioRef.current;
+
+                    if (audio) {
                       if (next) {
-                        audioRef.current.volume = 0.4;
-                        audioRef.current.play();
+                        audio.volume = 0.4;
+                        audio.play().catch(() => {});
                       } else {
-                        audioRef.current.pause();
+                        audio.pause();
                       }
                     }
 

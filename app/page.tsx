@@ -241,7 +241,7 @@ export default function Home() {
             quiet room
           </h1>
 
-          <p style={{ opacity: 0.75 }}>{message}</p>
+          <p style={{ opacity: 0.75 }}>let's focus</p>
 
           <div style={{ opacity: 0.4 }}>{time}</div>
 

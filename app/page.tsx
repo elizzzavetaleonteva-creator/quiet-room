@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/* ---------------- PHRASES (25) ---------------- */
+/* ---------------- PHRASES ---------------- */
 
 const messages = [
   "breathe",
@@ -49,8 +49,8 @@ type Task = {
 export default function Home() {
   /* ---------------- STATE ---------------- */
 
-  const [rainOn, setRainOn] = useState(false);
   const [deepFocus, setDeepFocus] = useState(false);
+  const [rainOn, setRainOn] = useState(false);
 
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
@@ -67,11 +67,11 @@ export default function Home() {
   useEffect(() => {
     if (!running) return;
 
-    const t = setInterval(() => {
-      setTime((p) => (p > 0 ? p - 1 : 0));
+    const interval = setInterval(() => {
+      setTime((t) => (t > 0 ? t - 1 : 0));
     }, 1000);
 
-    return () => clearInterval(t);
+    return () => clearInterval(interval);
   }, [running]);
 
   const format = (s: number) => {
@@ -82,40 +82,32 @@ export default function Home() {
       .padStart(2, "0")}`;
   };
 
-  /* ---------------- FLOATING TEXT ---------------- */
-
-  useEffect(() => {
-    if (deepFocus) return; // 🚫 ключевая блокировка
-
-    const interval = setInterval(() => {
-      const id = Date.now() + Math.random();
-
-      setFloating((prev) =>
-        [
-          ...prev,
-          {
-            id,
-            text: messages[Math.floor(Math.random() * messages.length)],
-            x: Math.random() * 100,
-            y: Math.random() * 100,
-          },
-        ].slice(-60)
-      );
-
-      setTimeout(() => {
-        setFloating((prev) => prev.filter((f) => f.id !== id));
-      }, 6000);
-    }, 900);
-
-    return () => clearInterval(interval);
-  }, [deepFocus]);
-
-  /* ---------------- CLEANUP ON DEEP FOCUS ---------------- */
+  /* ---------------- FLOATING (100% CONTROLLED) ---------------- */
 
   useEffect(() => {
     if (deepFocus) {
-      setFloating([]); // сразу чистим экран
+      setFloating([]); // 💣 сразу чистим
+      return;
     }
+
+    const interval = setInterval(() => {
+      setFloating((prev) => {
+        if (deepFocus) return prev; // 💣 страховка
+
+        const id = Date.now() + Math.random();
+
+        const next = {
+          id,
+          text: messages[Math.floor(Math.random() * messages.length)],
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+        };
+
+        return [...prev, next].slice(-50);
+      });
+    }, 900);
+
+    return () => clearInterval(interval);
   }, [deepFocus]);
 
   /* ---------------- TASKS ---------------- */
@@ -173,7 +165,7 @@ export default function Home() {
         <source src="/rain.mp3" type="audio/mpeg" />
       </audio>
 
-      {/* RAIN VISUAL */}
+      {/* RAIN */}
       {rainOn && (
         <div
           style={{
@@ -187,23 +179,23 @@ export default function Home() {
       )}
 
       {/* FLOATING TEXT */}
-      {floating.map((m) => (
-        <div
-          key={m.id}
-          style={{
-            position: "absolute",
-            left: `${m.x}%`,
-            top: `${m.y}%`,
-            transform: "translate(-50%, -50%)",
-            fontSize: 13,
-            opacity: 0.2,
-            color: "rgba(255,255,255,0.7)",
-            pointerEvents: "none",
-          }}
-        >
-          {m.text}
-        </div>
-      ))}
+      {!deepFocus &&
+        floating.map((m) => (
+          <div
+            key={m.id}
+            style={{
+              position: "absolute",
+              left: `${m.x}%`,
+              top: `${m.y}%`,
+              transform: "translate(-50%, -50%)",
+              fontSize: 13,
+              opacity: 0.2,
+              pointerEvents: "none",
+            }}
+          >
+            {m.text}
+          </div>
+        ))}
 
       {/* CENTER */}
       <div
@@ -220,7 +212,7 @@ export default function Home() {
       >
         <h1 style={{ fontWeight: 300 }}>let’s focus</h1>
 
-        {/* DEEP FOCUS */}
+        {/* DEEP FOCUS MODE */}
         {deepFocus ? (
           <>
             <div style={{ fontSize: 44 }}>{format(time)}</div>

@@ -1,39 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-/* ---------------- BACKGROUND MESSAGES ---------------- */
+/* ---------------- TEXTS ---------------- */
 
 const messages = [
   "stay here",
-  "breathe in",
+  "breathe",
   "focus returns",
   "no distractions",
   "you are present",
   "quiet mind",
-  "time flows",
   "keep going",
-  "soft silence",
   "observe",
   "reset",
-  "nothing urgent",
   "calm state",
-  "attention drifting",
-  "come back",
-  "you are safe",
+  "just continue",
+  "soft silence",
+  "you are okay",
   "work gently",
-  "focus mode",
-  "still here",
-  "continue",
+  "nothing urgent",
 ];
 
-type Floating = {
-  id: number;
-  text: string;
-  x: number;
-  y: number;
-  opacity: number;
-};
+/* ---------------- TYPES ---------------- */
 
 type Task = {
   text: string;
@@ -44,90 +33,40 @@ export default function Home() {
   /* ---------------- STATE ---------------- */
 
   const [message, setMessage] = useState("");
-  const [floating, setFloating] = useState<Floating[]>([]);
+  const [rain, setRain] = useState(true);
+  const [deepFocus, setDeepFocus] = useState(false);
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState("");
 
-  const [rain, setRain] = useState(false);
-  const [deepFocus, setDeepFocus] = useState(false);
+  const [time, setTime] = useState(30 * 60);
+  const [running, setRunning] = useState(false);
 
-  /* ---------------- POMODORO (30 MIN) ---------------- */
+  /* ---------------- INIT MESSAGE ---------------- */
 
-  const [secondsLeft, setSecondsLeft] = useState(30 * 60);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    setMessage(messages[Math.floor(Math.random() * messages.length)]);
+  }, []);
 
-  const startTimer = () => {
-    if (timerRef.current) return;
+  /* ---------------- TIMER ---------------- */
 
-    timerRef.current = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          clearInterval(timerRef.current!);
-          timerRef.current = null;
-          return 0;
-        }
-        return s - 1;
-      });
+  useEffect(() => {
+    if (!running) return;
+
+    const t = setInterval(() => {
+      setTime((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
-  };
 
-  const resetTimer = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-    setSecondsLeft(30 * 60);
-  };
+    return () => clearInterval(t);
+  }, [running]);
 
-  const formatTime = (s: number) => {
+  const format = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
     return `${m.toString().padStart(2, "0")}:${sec
       .toString()
       .padStart(2, "0")}`;
   };
-
-  /* ---------------- INIT ---------------- */
-
-  useEffect(() => {
-    setMessage(messages[Math.floor(Math.random() * messages.length)]);
-  }, []);
-
-  /* ---------------- BACKGROUND FLOW ---------------- */
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const item: Floating = {
-        id: Date.now() + Math.random(),
-        text: messages[Math.floor(Math.random() * messages.length)],
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        opacity: 0,
-      };
-
-      setFloating((prev) => [...prev, item].slice(-40));
-
-      setTimeout(() => {
-        setFloating((prev) =>
-          prev.map((m) =>
-            m.id === item.id ? { ...m, opacity: 0.18 } : m
-          )
-        );
-      }, 50);
-
-      setTimeout(() => {
-        setFloating((prev) =>
-          prev.map((m) =>
-            m.id === item.id ? { ...m, opacity: 0 } : m
-          )
-        );
-      }, 3500);
-
-      setTimeout(() => {
-        setFloating((prev) => prev.filter((m) => m.id !== item.id));
-      }, 4500);
-    }, 1200);
-
-    return () => clearInterval(interval);
-  }, []);
 
   /* ---------------- TASKS ---------------- */
 
@@ -151,51 +90,29 @@ export default function Home() {
     <main
       style={{
         position: "relative",
-        height: "100vh",
         width: "100vw",
+        height: "100vh",
         background: "#000",
         color: "#fff",
-        overflow: "hidden",
         fontFamily: "sans-serif",
+        overflow: "hidden",
       }}
     >
-      {/* ---------------- RAIN (visual only placeholder) ---------------- */}
+      {/* ---------------- RAIN ---------------- */}
 
       {rain && (
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background:
-              "repeating-linear-gradient(transparent, transparent 2px, rgba(255,255,255,0.03) 3px)",
+            backgroundImage:
+              "repeating-linear-gradient(transparent, transparent 3px, rgba(255,255,255,0.06) 4px)",
             pointerEvents: "none",
           }}
         />
       )}
 
-      {/* ---------------- FLOATING TEXT ---------------- */}
-
-      {floating.map((m) => (
-        <div
-          key={m.id}
-          style={{
-            position: "absolute",
-            left: `${m.x}%`,
-            top: `${m.y}%`,
-            transform: "translate(-50%, -50%)",
-            fontSize: 12,
-            opacity: m.opacity,
-            transition: "opacity 1.5s ease",
-            pointerEvents: "none",
-            whiteSpace: "nowrap",
-            color: "white",
-          }}
-        >
-          {m.text}
-        </div>
-      ))}
-
-      {/* ---------------- CENTER UI ---------------- */}
+      {/* ---------------- CENTER ---------------- */}
 
       <div
         style={{
@@ -209,42 +126,41 @@ export default function Home() {
           gap: 12,
         }}
       >
-        <h1 style={{ fontSize: 32, fontWeight: 300 }}>
-          let’s focus
-        </h1>
+        <h1 style={{ fontWeight: 300 }}>let’s focus</h1>
 
         <p style={{ opacity: 0.7 }}>{message}</p>
 
         {/* TIMER */}
 
-        <div style={{ fontSize: 28, marginTop: 10 }}>
-          {formatTime(secondsLeft)}
+        <div style={{ fontSize: 28 }}>
+          {format(time)}
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={startTimer}>start</button>
-          <button onClick={resetTimer}>reset</button>
+          <button onClick={() => setRunning(true)}>start</button>
+          <button onClick={() => setRunning(false)}>pause</button>
+          <button onClick={() => setTime(30 * 60)}>reset</button>
         </div>
 
         {/* CONTROLS */}
 
-        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+        <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setRain((r) => !r)}>
-            {rain ? "turn rain off" : "turn rain on"}
+            rain: {rain ? "on" : "off"}
           </button>
 
           <button onClick={() => setDeepFocus((d) => !d)}>
-            {deepFocus ? "exit deep focus" : "deep focus"}
+            deep focus: {deepFocus ? "on" : "off"}
           </button>
         </div>
 
-        {/* TASKS (hidden in deep focus) */}
+        {/* TASKS */}
 
         {!deepFocus && (
           <div
             style={{
               marginTop: 20,
-              width: 300,
+              width: 320,
               background: "rgba(255,255,255,0.06)",
               padding: 12,
               borderRadius: 10,
@@ -260,7 +176,7 @@ export default function Home() {
                   flex: 1,
                   padding: 8,
                   background: "rgba(0,0,0,0.4)",
-                  border: "1px solid rgba(255,255,255,0.15)",
+                  border: "1px solid rgba(255,255,255,0.2)",
                   color: "white",
                 }}
               />
@@ -273,8 +189,8 @@ export default function Home() {
                   key={i}
                   onClick={() => toggleTask(i)}
                   style={{
+                    fontSize: 13,
                     marginTop: 6,
-                    fontSize: 12,
                     opacity: t.done ? 0.4 : 0.9,
                     textDecoration: t.done ? "line-through" : "none",
                     cursor: "pointer",

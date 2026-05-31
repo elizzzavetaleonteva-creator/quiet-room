@@ -104,7 +104,7 @@ export default function Home() {
     return () => clearInterval(id);
   }, [deepFocus]);
 
-  /* SAVE TO LOCALSTORAGE */
+  /* SAVE TASKS */
   useEffect(() => {
     localStorage.setItem("focus-tasks", JSON.stringify(tasks));
   }, [tasks]);
@@ -128,7 +128,11 @@ export default function Home() {
     );
   };
 
-  /* SORTING (ВАЖНО: только для отображения) */
+  /* 🆕 DELETE TASK */
+  const deleteTask = (id: number) => {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
+  };
+
   const sortedTasks = [...tasks].sort(
     (a, b) => Number(a.done) - Number(b.done)
   );
@@ -229,7 +233,7 @@ export default function Home() {
           </button>
 
           <button onClick={() => setDeepFocus((p) => !p)}>
-            {deepFocus ? "exit focus" : "deep focus"}
+            deep focus
           </button>
         </div>
 
@@ -259,15 +263,25 @@ export default function Home() {
               {sortedTasks.map((t) => (
                 <div
                   key={t.id}
-                  onClick={() => toggleTask(t.id)}
                   style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
                     marginTop: 8,
-                    cursor: "pointer",
                     opacity: t.done ? 0.4 : 1,
                     textDecoration: t.done ? "line-through" : "none",
                   }}
                 >
-                  {t.text}
+                  <span
+                    onClick={() => toggleTask(t.id)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    {t.text}
+                  </span>
+
+                  <button onClick={() => deleteTask(t.id)}>
+                    ✕
+                  </button>
                 </div>
               ))}
             </div>

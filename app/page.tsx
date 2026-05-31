@@ -31,6 +31,7 @@ const messages = [
 ];
 
 type Task = {
+  id: number;
   text: string;
   done: boolean;
 };
@@ -49,13 +50,9 @@ export default function Home() {
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
 
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    if (typeof window === "undefined") return [];
-    const saved = localStorage.getItem("quiet-tasks");
-    return saved ? JSON.parse(saved) : [];
-  });
-
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [input, setInput] = useState("");
+
   const [floating, setFloating] = useState<Floating[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -71,10 +68,13 @@ export default function Home() {
     return () => clearInterval(id);
   }, [running]);
 
-  /* SAVE TASKS */
-  useEffect(() => {
-    localStorage.setItem("quiet-tasks", JSON.stringify(tasks));
-  }, [tasks]);
+  const format = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m.toString().padStart(2, "0")}:${sec
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   /* FLOATING TEXT */
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function Home() {
 
     const id = setInterval(() => {
       setFloating((prev) => {
-        const next = {
+        const next: Floating = {
           id: Date.now() + Math.random(),
           text: messages[Math.floor(Math.random() * messages.length)],
           x: Math.random() * 100,
@@ -99,25 +99,22 @@ export default function Home() {
     return () => clearInterval(id);
   }, [deepFocus]);
 
-  const format = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
-
-    return `${m.toString().padStart(2, "0")}:${sec
-      .toString()
-      .padStart(2, "0")}`;
-  };
-
+  /* TASKS */
   const addTask = () => {
     if (!input.trim()) return;
-    setTasks((p) => [...p, { text: input, done: false }]);
+
+    setTasks((p) => [
+      ...p,
+      { id: Date.now(), text: input, done: false },
+    ]);
+
     setInput("");
   };
 
-  const toggleTask = (index: number) => {
+  const toggleTask = (id: number) => {
     setTasks((prev) => {
-      const updated = prev.map((t, i) =>
-        i === index ? { ...t, done: !t.done } : t
+      const updated = prev.map((t) =>
+        t.id === id ? { ...t, done: !t.done } : t
       );
 
       return [
@@ -127,6 +124,7 @@ export default function Home() {
     });
   };
 
+  /* RAIN */
   const toggleRain = () => {
     setRainOn((prev) => {
       const next = !prev;
@@ -156,7 +154,7 @@ export default function Home() {
         fontFamily: "sans-serif",
       }}
     >
-      <audio ref={audioRef} loop>
+      <audio ref={audioRef} loop preload="auto">
         <source src="/rain.mp3" type="audio/mpeg" />
       </audio>
 
@@ -192,7 +190,7 @@ export default function Home() {
           </div>
         ))}
 
-      {/* CENTER UI */}
+      {/* CENTER */}
       <div
         style={{
           position: "relative",
@@ -205,7 +203,7 @@ export default function Home() {
           gap: 12,
         }}
       >
-        <h1 style={{ fontWeight: 300 }}>let's focus</h1>
+        <h1 style={{ fontWeight: 300 }}>let’s focus</h1>
 
         <div style={{ fontSize: deepFocus ? 54 : 32 }}>
           {format(time)}
@@ -227,6 +225,7 @@ export default function Home() {
           </button>
         </div>
 
+        {/* TASKS */}
         {!deepFocus && (
           <div
             style={{
@@ -250,15 +249,17 @@ export default function Home() {
             </div>
 
             <div style={{ marginTop: 10 }}>
-              {tasks.map((t, i) => (
+              {tasks.map((t) => (
                 <div
-                  key={i}
-                  onClick={() => toggleTask(i)}
+                  key={t.id}
+                  onClick={() => toggleTask(t.id)}
                   style={{
                     marginTop: 8,
                     cursor: "pointer",
                     opacity: t.done ? 0.4 : 1,
-                    textDecoration: t.done ? "line-through" : "none",
+                    textDecoration: t.done
+                      ? "line-through"
+                      : "none",
                   }}
                 >
                   {t.text}

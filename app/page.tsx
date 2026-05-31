@@ -104,7 +104,7 @@ export default function Home() {
     return () => clearInterval(id);
   }, [deepFocus]);
 
-  /* SAVE TASKS */
+  /* SAVE TO LOCALSTORAGE */
   useEffect(() => {
     localStorage.setItem("focus-tasks", JSON.stringify(tasks));
   }, [tasks]);
@@ -112,8 +112,8 @@ export default function Home() {
   const addTask = () => {
     if (!input.trim()) return;
 
-    setTasks((p) => [
-      ...p,
+    setTasks((prev) => [
+      ...prev,
       { id: Date.now(), text: input, done: false },
     ]);
 
@@ -121,17 +121,17 @@ export default function Home() {
   };
 
   const toggleTask = (id: number) => {
-    setTasks((prev) => {
-      const updated = prev.map((t) =>
+    setTasks((prev) =>
+      prev.map((t) =>
         t.id === id ? { ...t, done: !t.done } : t
-      );
-
-      return [
-        ...updated.filter((t) => !t.done),
-        ...updated.filter((t) => t.done),
-      ];
-    });
+      )
+    );
   };
+
+  /* SORTING (ВАЖНО: только для отображения) */
+  const sortedTasks = [...tasks].sort(
+    (a, b) => Number(a.done) - Number(b.done)
+  );
 
   const toggleRain = () => {
     setRainOn((prev) => {
@@ -198,7 +198,7 @@ export default function Home() {
           </div>
         ))}
 
-      {/* CENTER */}
+      {/* UI */}
       <div
         style={{
           position: "relative",
@@ -256,7 +256,7 @@ export default function Home() {
             </div>
 
             <div style={{ marginTop: 10 }}>
-              {tasks.map((t) => (
+              {sortedTasks.map((t) => (
                 <div
                   key={t.id}
                   onClick={() => toggleTask(t.id)}

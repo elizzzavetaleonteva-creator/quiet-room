@@ -50,9 +50,13 @@ export default function Home() {
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [input, setInput] = useState("");
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem("focus-tasks");
+    return saved ? JSON.parse(saved) : [];
+  });
 
+  const [input, setInput] = useState("");
   const [floating, setFloating] = useState<Floating[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -71,6 +75,7 @@ export default function Home() {
   const format = (s: number) => {
     const m = Math.floor(s / 60);
     const sec = s % 60;
+
     return `${m.toString().padStart(2, "0")}:${sec
       .toString()
       .padStart(2, "0")}`;
@@ -99,7 +104,11 @@ export default function Home() {
     return () => clearInterval(id);
   }, [deepFocus]);
 
-  /* TASKS */
+  /* SAVE TASKS */
+  useEffect(() => {
+    localStorage.setItem("focus-tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
   const addTask = () => {
     if (!input.trim()) return;
 
@@ -124,7 +133,6 @@ export default function Home() {
     });
   };
 
-  /* RAIN */
   const toggleRain = () => {
     setRainOn((prev) => {
       const next = !prev;
@@ -158,7 +166,7 @@ export default function Home() {
         <source src="/rain.mp3" type="audio/mpeg" />
       </audio>
 
-      {/* RAIN VISUAL */}
+      {/* RAIN */}
       {rainOn && (
         <div
           style={{
@@ -203,7 +211,7 @@ export default function Home() {
           gap: 12,
         }}
       >
-        <h1 style={{ fontWeight: 300 }}>let’s focus</h1>
+        <h1 style={{ fontWeight: 300 }}>let's focus</h1>
 
         <div style={{ fontSize: deepFocus ? 54 : 32 }}>
           {format(time)}
@@ -225,7 +233,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* TASKS */}
         {!deepFocus && (
           <div
             style={{
@@ -257,9 +264,7 @@ export default function Home() {
                     marginTop: 8,
                     cursor: "pointer",
                     opacity: t.done ? 0.4 : 1,
-                    textDecoration: t.done
-                      ? "line-through"
-                      : "none",
+                    textDecoration: t.done ? "line-through" : "none",
                   }}
                 >
                   {t.text}

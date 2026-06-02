@@ -47,6 +47,8 @@ export default function Home() {
   const [deepFocus, setDeepFocus] = useState(false);
   const [rainOn, setRainOn] = useState(false);
 
+  // 🆕 таймер теперь настраиваемый
+  const [focusMinutes, setFocusMinutes] = useState(30);
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
 
@@ -128,7 +130,6 @@ export default function Home() {
     );
   };
 
-  /* 🆕 DELETE TASK */
   const deleteTask = (id: number) => {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   };
@@ -217,14 +218,44 @@ export default function Home() {
       >
         <h1 style={{ fontWeight: 300 }}>let's focus</h1>
 
+        {/* TIMER */}
         <div style={{ fontSize: deepFocus ? 54 : 32 }}>
           {format(time)}
         </div>
 
+        {/* 🆕 настройка таймера */}
+        {!deepFocus && !running && (
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span>focus:</span>
+
+            <input
+              type="number"
+              min={1}
+              max={180}
+              value={focusMinutes}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                setFocusMinutes(v);
+                setTime(v * 60);
+              }}
+              style={{ width: 60 }}
+            />
+
+            <span>min</span>
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => setRunning(true)}>start</button>
           <button onClick={() => setRunning(false)}>pause</button>
-          <button onClick={() => setTime(30 * 60)}>reset</button>
+          <button
+            onClick={() => {
+              setRunning(false);
+              setTime(focusMinutes * 60);
+            }}
+          >
+            reset
+          </button>
         </div>
 
         <div style={{ display: "flex", gap: 8 }}>
@@ -266,16 +297,12 @@ export default function Home() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    alignItems: "center",
                     marginTop: 8,
                     opacity: t.done ? 0.4 : 1,
                     textDecoration: t.done ? "line-through" : "none",
                   }}
                 >
-                  <span
-                    onClick={() => toggleTask(t.id)}
-                    style={{ cursor: "pointer" }}
-                  >
+                  <span onClick={() => toggleTask(t.id)}>
                     {t.text}
                   </span>
 

@@ -98,48 +98,46 @@ export default function Home() {
 
   /* FLOATING TEXT */
   useEffect(() => {
-    if (deepFocus) {
-      setFloating([]);
-      return;
-    }
+  if (deepFocus) {
+    setFloating([]);
+    return;
+  }
 
-    const id = setInterval(() => {
-  setFloating((prev) => {
-    const maxAttempts = 10;
+  const id = setInterval(() => {
+    setFloating((prev) => {
+      const maxAttempts = 10;
 
-    let next: Floating | null = null;
+      let next: Floating | null = null;
 
-    for (let i = 0; i < maxAttempts; i++) {
-      const candidate: Floating = {
-        id: Date.now() + Math.random(),
-        text: messages[Math.floor(Math.random() * messages.length)],
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-      };
+      for (let i = 0; i < maxAttempts; i++) {
+        const candidate: Floating = {
+          id: Date.now() + Math.random(),
+          text: messages[Math.floor(Math.random() * messages.length)],
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+        };
 
-      const tooClose = prev.some((p) => {
-        const dx = p.x - candidate.x;
-        const dy = p.y - candidate.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+        const tooClose = prev.some((p) => {
+          const dx = p.x - candidate.x;
+          const dy = p.y - candidate.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          return distance < 12;
+        });
 
-        return distance < 12; // 👈 минимальная дистанция
-      });
-
-      if (!tooClose) {
-        next = candidate;
-        break;
+        if (!tooClose) {
+          next = candidate;
+          break;
+        }
       }
-    }
 
-    if (!next) return prev;
+      if (!next) return prev;
 
-    return [...prev, next].slice(-40);
-  });
-}, 1200);
+      return [...prev, next].slice(-40);
+    });
+  }, 1200);
 
-    return () => clearInterval(id);
-  }, [deepFocus]);
-
+  return () => clearInterval(id);
+}, [deepFocus]);
   /* SAVE TASKS */
   useEffect(() => {
     localStorage.setItem("focus-tasks", JSON.stringify(tasks));

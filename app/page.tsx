@@ -332,8 +332,6 @@ export default function Home() {
 >
   ×
 </button>
-                    ✕
-                  </button>
                 </div>
               ))}
             </div>

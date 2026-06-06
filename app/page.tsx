@@ -104,17 +104,38 @@ export default function Home() {
     }
 
     const id = setInterval(() => {
-      setFloating((prev) => {
-        const next: Floating = {
-          id: Date.now() + Math.random(),
-          text: messages[Math.floor(Math.random() * messages.length)],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-        };
+  setFloating((prev) => {
+    const maxAttempts = 10;
 
-        return [...prev, next].slice(-40);
+    let next: Floating | null = null;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      const candidate: Floating = {
+        id: Date.now() + Math.random(),
+        text: messages[Math.floor(Math.random() * messages.length)],
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+      };
+
+      const tooClose = prev.some((p) => {
+        const dx = p.x - candidate.x;
+        const dy = p.y - candidate.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        return distance < 12; // 👈 минимальная дистанция
       });
-    }, 1200);
+
+      if (!tooClose) {
+        next = candidate;
+        break;
+      }
+    }
+
+    if (!next) return prev;
+
+    return [...prev, next].slice(-40);
+  });
+}, 1200);
 
     return () => clearInterval(id);
   }, [deepFocus]);

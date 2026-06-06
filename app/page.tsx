@@ -61,7 +61,19 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [floating, setFloating] = useState<Floating[]>([]);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null); const iconButtonStyle = {
+  width: 26,
+  height: 26,
+  borderRadius: "50%",
+  border: "1px solid rgba(255,255,255,0.15)",
+  background: "rgba(255,255,255,0.05)",
+  color: "#fff",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 0,
+};
 
   /* TIMER */
   useEffect(() => {
@@ -228,18 +240,27 @@ export default function Home() {
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <span>focus:</span>
 
-            <input
-              type="number"
-              min={1}
-              max={180}
-              value={focusMinutes}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                setFocusMinutes(v);
-                setTime(v * 60);
-              }}
-              style={{ width: 60 }}
-            />
+           <input
+  type="number"
+  min={1}
+  max={180}
+  value={focusMinutes || ""}
+  onChange={(e) => {
+    const value = parseInt(e.target.value);
+
+    if (isNaN(value)) {
+      setFocusMinutes(0);
+      return;
+    }
+
+    setFocusMinutes(value);
+    setTime(value * 60);
+  }}
+  style={{
+    width: 60,
+    textAlign: "center",
+  }}
+/>
 
             <span>min</span>
           </div>
@@ -287,8 +308,7 @@ export default function Home() {
                 placeholder="add task..."
                 style={{ flex: 1 }}
               />
-              <button onClick={addTask}>+</button>
-            </div>
+              <button onClick={addTask} style={iconButtonStyle} > + </button> </div>
 
             <div style={{ marginTop: 10 }}>
               {sortedTasks.map((t) => (
@@ -306,7 +326,12 @@ export default function Home() {
                     {t.text}
                   </span>
 
-                  <button onClick={() => deleteTask(t.id)}>
+                  <button
+  onClick={() => deleteTask(t.id)}
+  style={iconButtonStyle}
+>
+  ×
+</button>
                     ✕
                   </button>
                 </div>

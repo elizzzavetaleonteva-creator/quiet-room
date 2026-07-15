@@ -29,7 +29,6 @@ const messages = [
   "everything is temporarily suspended",
   "the room remains open",
 ];
- 
 
 type Task = {
   id: number;
@@ -48,99 +47,111 @@ export default function Home() {
   const [deepFocus, setDeepFocus] = useState(false);
   const [rainOn, setRainOn] = useState(false);
 
-  // 🆕 таймер теперь настраиваемый
   const [focusMinutes, setFocusMinutes] = useState(30);
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
 
   const [tasks, setTasks] = useState<Task[]>(() => {
     if (typeof window === "undefined") return [];
+
     const saved = localStorage.getItem("focus-tasks");
+
     return saved ? JSON.parse(saved) : [];
   });
 
   const [input, setInput] = useState("");
   const [floating, setFloating] = useState<Floating[]>([]);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null); const iconButtonStyle = {
-  width: 26,
-  height: 26,
-  borderRadius: "50%",
-  border: "1px solid rgba(255,255,255,0.15)",
-  background: "rgba(255,255,255,0.05)",
-  color: "#fff",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 0,
-};
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const iconButtonStyle = {
+    width: 26,
+    height: 26,
+    borderRadius: "50%",
+    border: "1px solid rgba(255,255,255,0.15)",
+    background: "rgba(255,255,255,0.05)",
+    color: "#fff",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 0,
+  };
 
   /* TIMER */
   useEffect(() => {
     if (!running) return;
 
     const id = setInterval(() => {
-      setTime((t) => (t > 0 ? t - 1 : 0));
+      setTime((t) => {
+        if (t <= 1) {
+          setRunning(false);
+          return 0;
+        }
+
+        return t - 1;
+      });
     }, 1000);
 
     return () => clearInterval(id);
   }, [running]);
 
   const format = (s: number) => {
-    const m = Math.floor(s / 60);
-    const sec = s % 60;
+    const minutes = Math.floor(s / 60);
+    const seconds = s % 60;
 
-    return `${m.toString().padStart(2, "0")}:${sec
+    return `${minutes.toString().padStart(2, "0")}:${seconds
       .toString()
       .padStart(2, "0")}`;
   };
 
   /* FLOATING TEXT */
   useEffect(() => {
-  if (deepFocus) {
-    setFloating([]);
-    return;
-  }
+    if (deepFocus) {
+      setFloating([]);
+      return;
+    }
 
-  const id = setInterval(() => {
-    setFloating((prev) => {
-      const maxAttempts = 10;
+    const id = setInterval(() => {
+      setFloating((prev) => {
+        let next: Floating | null = null;
 
-      let next: Floating | null = null;
+        for (let i = 0; i < 10; i++) {
+          const candidate: Floating = {
+            id: Date.now() + Math.random(),
+            text: messages[Math.floor(Math.random() * messages.length)],
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+          };
 
-      for (let i = 0; i < maxAttempts; i++) {
-        const candidate: Floating = {
-          id: Date.now() + Math.random(),
-          text: messages[Math.floor(Math.random() * messages.length)],
-          x: Math.random() * 100,
-          y: Math.random() * 100,
-        };
+          const tooClose = prev.some((item) => {
+            const dx = item.x - candidate.x;
+            const dy = item.y - candidate.y;
 
-        const tooClose = prev.some((p) => {
-          const dx = p.x - candidate.x;
-          const dy = p.y - candidate.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          return distance < 12;
-        });
+            return Math.sqrt(dx * dx + dy * dy) < 12;
+          });
 
-        if (!tooClose) {
-          next = candidate;
-          break;
+          if (!tooClose) {
+            next = candidate;
+            break;
+          }
         }
-      }
 
-      if (!next) return prev;
+        if (!next) return prev;
 
-      return [...prev, next].slice(-40);
-    });
-  }, 1200);
+        return [...prev, next].slice(-40);
+      });
+    }, 1200);
 
-  return () => clearInterval(id);
-}, [deepFocus]);
+    return () => clearInterval(id);
+  }, [deepFocus]);
+
   /* SAVE TASKS */
   useEffect(() => {
-    localStorage.setItem("focus-tasks", JSON.stringify(tasks));
+    localStorage.setItem(
+      "focus-tasks",
+      JSON.stringify(tasks)
+    );
   }, [tasks]);
 
   const addTask = () => {
@@ -148,7 +159,11 @@ export default function Home() {
 
     setTasks((prev) => [
       ...prev,
-      { id: Date.now(), text: input, done: false },
+      {
+        id: Date.now(),
+        text: input,
+        done: false,
+      },
     ]);
 
     setInput("");
@@ -156,14 +171,21 @@ export default function Home() {
 
   const toggleTask = (id: number) => {
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, done: !t.done } : t
+      prev.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              done: !task.done,
+            }
+          : task
       )
     );
   };
 
   const deleteTask = (id: number) => {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    setTasks((prev) =>
+      prev.filter((task) => task.id !== id)
+    );
   };
 
   const sortedTasks = [...tasks].sort(
@@ -186,7 +208,6 @@ export default function Home() {
       return next;
     });
   };
-
   return (
     <main
       style={{
@@ -248,115 +269,260 @@ export default function Home() {
           gap: 12,
         }}
       >
-        <h1 style={{ fontWeight: 300 }}>let's focus</h1>
 
-        {/* TIMER */}
-        <div style={{ fontSize: deepFocus ? 54 : 32 }}>
-          {format(time)}
-        </div>
-
-        {/* 🆕 настройка таймера */}
-        {!deepFocus && !running && (
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <span>focus:</span>
-
-           <input
-  type="number"
-  min={1}
-  max={180}
-  value={focusMinutes || ""}
-  onChange={(e) => {
-    const value = parseInt(e.target.value);
-
-    if (isNaN(value)) {
-      setFocusMinutes(0);
-      return;
-    }
-
-    setFocusMinutes(value);
-    setTime(value * 60);
-  }}
-  style={{
-    width: 60,
-    textAlign: "center",
-  }}
-/>
-
-            <span>min</span>
-          </div>
-        )}
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => setRunning(true)}>start</button>
-          <button onClick={() => setRunning(false)}>pause</button>
-          <button
-            onClick={() => {
-              setRunning(false);
-              setTime(focusMinutes * 60);
-            }}
-          >
-            reset
-          </button>
-        </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={toggleRain}>
-            {rainOn ? "TURN OFF RAIN" : "TURN ON RAIN"}
-          </button>
-
-          <button onClick={() => setDeepFocus((p) => !p)}>
-            deep focus
-          </button>
-        </div>
-
-        {!deepFocus && (
-          <div
-            style={{
-              width: 340,
-              marginTop: 20,
-              background: "rgba(0,0,0,0.7)",
-              backdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              padding: 14,
-              borderRadius: 12,
-            }}
-          >
-            <div style={{ display: "flex", gap: 6 }}>
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="add task..."
-                style={{ flex: 1 }}
-              />
-              <button onClick={addTask} style={iconButtonStyle} > + </button> </div>
-
-            <div style={{ marginTop: 10 }}>
-              {sortedTasks.map((t) => (
-                <div
-                  key={t.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginTop: 8,
-                    opacity: t.done ? 0.4 : 1,
-                    textDecoration: t.done ? "line-through" : "none",
-                  }}
-                >
-                  <span onClick={() => toggleTask(t.id)}>
-                    {t.text}
-                  </span>
-
-                  <button
-  onClick={() => deleteTask(t.id)}
-  style={iconButtonStyle}
->
-  ×
-</button>
-                </div>
-              ))}
+        {deepFocus ? (
+          <>
+            <div
+              style={{
+                fontSize: 13,
+                letterSpacing: 6,
+                textTransform: "uppercase",
+                opacity: 0.45,
+                fontWeight: 500,
+              }}
+            >
+              Slow Hours
             </div>
-          </div>
+
+            <div
+              style={{
+                fontSize: 80,
+                fontWeight: 200,
+                letterSpacing: 2,
+              }}
+            >
+              {format(time)}
+            </div>
+
+            <button
+              onClick={() => setDeepFocus(false)}
+              style={{
+                marginTop: 30,
+                opacity: 0.5,
+              }}
+            >
+              exit deep focus
+            </button>
+          </>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 13,
+                  letterSpacing: 6,
+                  textTransform: "uppercase",
+                  opacity: 0.45,
+                  fontWeight: 500,
+                }}
+              >
+                Slow Hours
+              </div>
+
+              <h1
+                style={{
+                  fontWeight: 300,
+                  margin: 0,
+                }}
+              >
+                let's focus
+              </h1>
+            </div>
+
+            <div
+              style={{
+                fontSize: 34,
+                fontWeight: 200,
+              }}
+            >
+              {format(time)}
+            </div>
+
+
+            {!running && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                <span>focus:</span>
+
+                <input
+                  type="number"
+                  min={1}
+                  max={180}
+                  value={focusMinutes || ""}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+
+                    if (!value) {
+                      setFocusMinutes(0);
+                      return;
+                    }
+
+                    setFocusMinutes(value);
+                    setTime(value * 60);
+                  }}
+                  style={{
+                    width: 60,
+                    textAlign: "center",
+                  }}
+                />
+
+                <span>min</span>
+              </div>
+            )}
+
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <button
+                onClick={() => setRunning(true)}
+              >
+                start
+              </button>
+
+              <button
+                onClick={() => setRunning(false)}
+              >
+                pause
+              </button>
+
+              <button
+                onClick={() => {
+                  setRunning(false);
+                  setTime(focusMinutes * 60);
+                }}
+              >
+                reset
+              </button>
+            </div>
+
+
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <button onClick={toggleRain}>
+                {rainOn
+                  ? "TURN OFF RAIN"
+                  : "TURN ON RAIN"}
+              </button>
+
+              <button
+                onClick={() => {
+                  setRunning(true);
+                  setDeepFocus(true);
+                }}
+              >
+                deep focus
+              </button>
+            </div>
+
+
+            <div
+              style={{
+                width: 340,
+                marginTop: 20,
+                background: "rgba(0,0,0,0.7)",
+                backdropFilter: "blur(12px)",
+                border:
+                  "1px solid rgba(255,255,255,0.08)",
+                padding: 14,
+                borderRadius: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                <input
+                  value={input}
+                  onChange={(e) =>
+                    setInput(e.target.value)
+                  }
+                  placeholder="add task..."
+                  style={{
+                    flex: 1,
+                  }}
+                />
+
+                <button
+                  onClick={addTask}
+                  style={iconButtonStyle}
+                >
+                  +
+                </button>
+              </div>
+
+
+              <div
+                style={{
+                  marginTop: 10,
+                }}
+              >
+                {sortedTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    style={{
+                      display: "flex",
+                      justifyContent:
+                        "space-between",
+                      alignItems: "center",
+                      marginTop: 8,
+                      opacity: task.done
+                        ? 0.4
+                        : 1,
+                      textDecoration:
+                        task.done
+                          ? "line-through"
+                          : "none",
+                    }}
+                  >
+                    <span
+                      onClick={() =>
+                        toggleTask(task.id)
+                      }
+                      style={{
+                        cursor: "pointer",
+                      }}
+                    >
+                      {task.text}
+                    </span>
+
+                    <button
+                      onClick={() =>
+                        deleteTask(task.id)
+                      }
+                      style={iconButtonStyle}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
+
       </div>
     </main>
   );

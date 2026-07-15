@@ -66,18 +66,30 @@ export default function Home() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const iconButtonStyle = {
-    width: 26,
-    height: 26,
-    borderRadius: "50%",
+
+  const buttonStyle = {
+    background: "transparent",
     border: "1px solid rgba(255,255,255,0.15)",
-    background: "rgba(255,255,255,0.05)",
-    color: "#fff",
+    color: "rgba(255,255,255,0.75)",
+    padding: "8px 16px",
+    borderRadius: 20,
+    fontSize: 12,
+    letterSpacing: 1,
     cursor: "pointer",
+  };
+
+
+  const iconButtonStyle = {
+    background: "transparent",
+    border: "none",
+    color: "rgba(255,255,255,0.45)",
+    cursor: "pointer",
+    fontSize: 16,
+    width: 24,
+    height: 24,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: 0,
   };
 
 
@@ -124,14 +136,16 @@ export default function Home() {
         let newMessage: Floating | null = null;
 
         for (let i = 0; i < 10; i++) {
-          const candidate = {
+          const candidate: Floating = {
             id: Date.now() + Math.random(),
-            text: messages[
-              Math.floor(Math.random() * messages.length)
-            ],
+            text:
+              messages[
+                Math.floor(Math.random() * messages.length)
+              ],
             x: Math.random() * 100,
             y: Math.random() * 100,
           };
+
 
           const tooClose = previous.some((item) => {
             const dx = item.x - candidate.x;
@@ -140,11 +154,13 @@ export default function Home() {
             return Math.sqrt(dx * dx + dy * dy) < 12;
           });
 
+
           if (!tooClose) {
             newMessage = candidate;
             break;
           }
         }
+
 
         if (!newMessage) return previous;
 
@@ -152,8 +168,11 @@ export default function Home() {
       });
     }, 1200);
 
+
     return () => clearInterval(interval);
+
   }, [deepFocus]);
+
 
 
   /* SAVE TASKS */
@@ -164,6 +183,7 @@ export default function Home() {
       JSON.stringify(tasks)
     );
   }, [tasks]);
+
 
 
   const addTask = () => {
@@ -182,6 +202,7 @@ export default function Home() {
   };
 
 
+
   const toggleTask = (id: number) => {
     setTasks((previous) =>
       previous.map((task) =>
@@ -196,6 +217,7 @@ export default function Home() {
   };
 
 
+
   const deleteTask = (id: number) => {
     setTasks((previous) =>
       previous.filter((task) => task.id !== id)
@@ -203,9 +225,11 @@ export default function Home() {
   };
 
 
+
   const sortedTasks = [...tasks].sort(
     (a, b) => Number(a.done) - Number(b.done)
   );
+
 
 
   const toggleRain = () => {
@@ -223,7 +247,8 @@ export default function Home() {
 
       return next;
     });
-  };   return (
+  };
+    return (
     <main
       style={{
         width: "100vw",
@@ -255,6 +280,7 @@ export default function Home() {
       )}
 
 
+
       {/* FLOATING TEXT */}
       {!deepFocus &&
         floating.map((item) => (
@@ -275,7 +301,9 @@ export default function Home() {
         ))}
 
 
-      {/* CENTER UI */}
+
+      {/* CENTER */}
+
       <div
         style={{
           position: "relative",
@@ -290,8 +318,11 @@ export default function Home() {
       >
 
 
-        {/* DEEP FOCUS MODE */}
+
+        {/* DEEP FOCUS */}
+
         {deepFocus ? (
+
           <>
             <div
               style={{
@@ -309,7 +340,6 @@ export default function Home() {
               style={{
                 fontSize: 82,
                 fontWeight: 200,
-                letterSpacing: 2,
               }}
             >
               {format(time)}
@@ -317,28 +347,36 @@ export default function Home() {
 
 
             <button
-              onClick={() => setDeepFocus(false)}
               style={{
-                marginTop: 30,
+                ...buttonStyle,
+                marginTop: 20,
                 opacity: 0.5,
               }}
+              onClick={() => setDeepFocus(false)}
             >
-              exit deep focus
+              exit
             </button>
+
           </>
+
+
         ) : (
 
 
-          /* NORMAL MODE */
           <>
+
+
+
+            {/* TITLE */}
+
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
-                gap: 4,
               }}
             >
+
               <div
                 style={{
                   fontSize: 13,
@@ -359,8 +397,13 @@ export default function Home() {
               >
                 let's focus
               </h1>
+
             </div>
 
+
+
+
+            {/* TIMER */}
 
             <div
               style={{
@@ -373,65 +416,85 @@ export default function Home() {
 
 
 
-            {/* TIMER PRESETS */}
+
+            {/* PRESETS */}
+
             {!running && (
+
               <div
                 style={{
                   display: "flex",
-                  gap: 8,
+                  gap: 12,
                 }}
               >
+
                 {timerOptions.map((minutes) => (
+
                   <button
                     key={minutes}
                     onClick={() => {
                       setFocusMinutes(minutes);
                       setTime(minutes * 60);
                     }}
+
                     style={{
-                      width: 42,
-                      height: 30,
-                      borderRadius: 15,
+                      background: "transparent",
+                      border: "none",
+                      color:
+                        focusMinutes === minutes
+                          ? "#fff"
+                          : "rgba(255,255,255,0.4)",
                       cursor: "pointer",
-                      color: "#fff",
-                      border:
+                      fontSize: 12,
+                      borderBottom:
                         focusMinutes === minutes
-                          ? "1px solid rgba(255,255,255,0.5)"
-                          : "1px solid rgba(255,255,255,0.15)",
-                      background:
-                        focusMinutes === minutes
-                          ? "rgba(255,255,255,0.15)"
-                          : "rgba(255,255,255,0.05)",
+                          ? "1px solid white"
+                          : "1px solid transparent",
+                      padding: "5px",
                     }}
                   >
-                    {minutes}
+                    {minutes}m
+
                   </button>
+
                 ))}
+
               </div>
+
             )}
 
 
 
+
+
+
             {/* TIMER BUTTONS */}
+
             <div
               style={{
                 display: "flex",
                 gap: 8,
               }}
             >
+
               <button
+                style={buttonStyle}
                 onClick={() => setRunning(true)}
               >
                 start
               </button>
 
+
               <button
+                style={buttonStyle}
                 onClick={() => setRunning(false)}
               >
                 pause
               </button>
 
+
               <button
+                style={buttonStyle}
                 onClick={() => {
                   setRunning(false);
                   setTime(focusMinutes * 60);
@@ -439,25 +502,34 @@ export default function Home() {
               >
                 reset
               </button>
+
+
             </div>
 
 
 
+
+
+
             {/* CONTROLS */}
+
             <div
               style={{
                 display: "flex",
                 gap: 8,
               }}
             >
-              <button onClick={toggleRain}>
-                {rainOn
-                  ? "TURN OFF RAIN"
-                  : "TURN ON RAIN"}
+
+              <button
+                style={buttonStyle}
+                onClick={toggleRain}
+              >
+                {rainOn ? "rain off" : "rain on"}
               </button>
 
 
               <button
+                style={buttonStyle}
                 onClick={() => {
                   setRunning(true);
                   setDeepFocus(true);
@@ -465,11 +537,17 @@ export default function Home() {
               >
                 deep focus
               </button>
+
+
             </div>
 
 
 
+
+
+
             {/* TASKS */}
+
             <div
               style={{
                 width: 340,
@@ -483,12 +561,14 @@ export default function Home() {
               }}
             >
 
+
               <div
                 style={{
                   display: "flex",
                   gap: 8,
                 }}
               >
+
                 <input
                   value={input}
                   onChange={(e) =>
@@ -497,18 +577,27 @@ export default function Home() {
                   placeholder="add task..."
                   style={{
                     flex: 1,
+                    background: "transparent",
+                    color: "white",
+                    border:
+                      "1px solid rgba(255,255,255,0.15)",
+                    padding: 8,
+                    borderRadius: 8,
                   }}
                 />
 
 
                 <button
-                  onClick={addTask}
                   style={iconButtonStyle}
+                  onClick={addTask}
                 >
                   +
                 </button>
 
+
               </div>
+
+
 
 
 
@@ -519,19 +608,24 @@ export default function Home() {
               >
 
                 {sortedTasks.map((task) => (
+
                   <div
                     key={task.id}
                     style={{
                       display: "flex",
-                      justifyContent: "space-between",
+                      justifyContent:
+                        "space-between",
                       alignItems: "center",
                       marginTop: 8,
-                      opacity: task.done ? 0.4 : 1,
-                      textDecoration: task.done
-                        ? "line-through"
-                        : "none",
+                      opacity:
+                        task.done ? 0.4 : 1,
+                      textDecoration:
+                        task.done
+                          ? "line-through"
+                          : "none",
                     }}
                   >
+
 
                     <span
                       onClick={() =>
@@ -545,26 +639,35 @@ export default function Home() {
                     </span>
 
 
+
                     <button
+                      style={iconButtonStyle}
                       onClick={() =>
                         deleteTask(task.id)
                       }
-                      style={iconButtonStyle}
                     >
                       ×
                     </button>
 
+
                   </div>
+
                 ))}
+
 
               </div>
 
+
             </div>
 
+
           </>
+
         )}
 
+
       </div>
+
 
     </main>
   );

@@ -136,16 +136,28 @@ export default function Home() {
         let newMessage: Floating | null = null;
 
         for (let i = 0; i < 10; i++) {
-          const candidate: Floating = {
-            id: Date.now() + Math.random(),
-            text:
-              messages[
-                Math.floor(Math.random() * messages.length)
-              ],
-            x: Math.random() * 100,
-            y: Math.random() * 100,
-          };
+          let x = 0;
+let y = 0;
 
+// Не даём фразам появляться в центре экрана
+do {
+  x = Math.random() * 100;
+  y = Math.random() * 100;
+} while (
+  x > 30 &&
+  x < 70 &&
+  y > 25 &&
+  y < 75
+);
+
+const candidate: Floating = {
+  id: Date.now() + Math.random(),
+  text: messages[
+    Math.floor(Math.random() * messages.length)
+  ],
+  x,
+  y,
+};
 
           const tooClose = previous.some((item) => {
             const dx = item.x - candidate.x;
@@ -291,8 +303,9 @@ export default function Home() {
               left: `${item.x}%`,
               top: `${item.y}%`,
               transform: "translate(-50%, -50%)",
-              opacity: 0.18,
-              fontSize: 14,
+              opacity: 0.12,
+fontSize: 13,
+letterSpacing: 0.5,
               pointerEvents: "none",
             }}
           >

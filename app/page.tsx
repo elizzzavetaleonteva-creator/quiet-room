@@ -53,6 +53,9 @@ export default function Home() {
   const [time, setTime] = useState(30 * 60);
   const [running, setRunning] = useState(false);
 
+  // Точное время, когда таймер должен закончиться
+  const [endTime, setEndTime] = useState<number | null>(null);
+
   const [tasks, setTasks] = useState<Task[]>(() => {
     if (typeof window === "undefined") return [];
 
@@ -66,7 +69,6 @@ export default function Home() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-
   const buttonStyle = {
     background: "transparent",
     border: "1px solid rgba(255,255,255,0.15)",
@@ -76,8 +78,8 @@ export default function Home() {
     fontSize: 12,
     letterSpacing: 1,
     cursor: "pointer",
+    transition: "all 0.3s ease",
   };
-
 
   const iconButtonStyle = {
     background: "transparent",
@@ -92,26 +94,34 @@ export default function Home() {
     justifyContent: "center",
   };
 
-
   /* TIMER */
 
   useEffect(() => {
-    if (!running) return;
+    if (!running || endTime === null) return;
 
-    const interval = setInterval(() => {
-      setTime((current) => {
-        if (current <= 1) {
-          setRunning(false);
-          return 0;
-        }
+    const updateTimer = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((endTime - Date.now()) / 1000)
+      );
 
-        return current - 1;
-      });
-    }, 1000);
+      setTime(remaining);
 
-    return () => clearInterval(interval);
-  }, [running]);
+      if (remaining <= 0) {
+        setRunning(false);
+        setEndTime(null);
+      }
+    };
 
+    // Обновляем сразу
+    updateTimer();
+
+    // Интервал теперь только обновляет экран.
+    // Он НЕ отвечает за течение времени.
+    const interval = window.setInterval(updateTimer, 250);
+
+    return () => window.clearInterval(interval);
+  }, [running, endTime]);
 
   const format = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -122,6 +132,38 @@ export default function Home() {
       .padStart(2, "0")}`;
   };
 
+  const startTimer = () => {
+    if (time <= 0) {
+      const seconds = focusMinutes * 60;
+
+      setTime(seconds);
+      setEndTime(Date.now() + seconds * 1000);
+    } else {
+      setEndTime(Date.now() + time * 1000);
+    }
+
+    setRunning(true);
+  };
+
+  const pauseTimer = () => {
+    if (endTime !== null) {
+      const remaining = Math.max(
+        0,
+        Math.ceil((endTime - Date.now()) / 1000)
+      );
+
+      setTime(remaining);
+    }
+
+    setEndTime(null);
+    setRunning(false);
+  };
+
+  const resetTimer = () => {
+    setRunning(false);
+    setEndTime(null);
+    setTime(focusMinutes * 60);
+  };
 
   /* FLOATING TEXT */
 
@@ -136,28 +178,14 @@ export default function Home() {
         let newMessage: Floating | null = null;
 
         for (let i = 0; i < 10; i++) {
-          let x = 0;
-let y = 0;
-
-// Не даём фразам появляться в центре экрана
-do {
-  x = Math.random() * 100;
-  y = Math.random() * 100;
-} while (
-  x > 30 &&
-  x < 70 &&
-  y > 25 &&
-  y < 75
-);
-
-const candidate: Floating = {
-  id: Date.now() + Math.random(),
-  text: messages[
-    Math.floor(Math.random() * messages.length)
-  ],
-  x,
-  y,
-};
+          const candidate = {
+            id: Date.now() + Math.random(),
+            text: messages[
+              Math.floor(Math.random() * messages.length)
+            ],
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+          };
 
           const tooClose = previous.some((item) => {
             const dx = item.x - candidate.x;
@@ -166,13 +194,11 @@ const candidate: Floating = {
             return Math.sqrt(dx * dx + dy * dy) < 12;
           });
 
-
           if (!tooClose) {
             newMessage = candidate;
             break;
           }
         }
-
 
         if (!newMessage) return previous;
 
@@ -180,12 +206,8 @@ const candidate: Floating = {
       });
     }, 1200);
 
-
     return () => clearInterval(interval);
-
   }, [deepFocus]);
-
-
 
   /* SAVE TASKS */
 
@@ -195,8 +217,6 @@ const candidate: Floating = {
       JSON.stringify(tasks)
     );
   }, [tasks]);
-
-
 
   const addTask = () => {
     if (!input.trim()) return;
@@ -213,8 +233,6 @@ const candidate: Floating = {
     setInput("");
   };
 
-
-
   const toggleTask = (id: number) => {
     setTasks((previous) =>
       previous.map((task) =>
@@ -228,21 +246,15 @@ const candidate: Floating = {
     );
   };
 
-
-
   const deleteTask = (id: number) => {
     setTasks((previous) =>
       previous.filter((task) => task.id !== id)
     );
   };
 
-
-
   const sortedTasks = [...tasks].sort(
     (a, b) => Number(a.done) - Number(b.done)
   );
-
-
 
   const toggleRain = () => {
     setRainOn((previous) => {
@@ -260,7 +272,8 @@ const candidate: Floating = {
       return next;
     });
   };
-    return (
+
+  return (
     <main
       style={{
         width: "100vw",
@@ -272,11 +285,9 @@ const candidate: Floating = {
         fontFamily: "sans-serif",
       }}
     >
-
       <audio ref={audioRef} loop preload="auto">
         <source src="/rain.mp3" type="audio/mpeg" />
       </audio>
-
 
       {/* RAIN */}
       {rainOn && (
@@ -291,8 +302,6 @@ const candidate: Floating = {
         />
       )}
 
-
-
       {/* FLOATING TEXT */}
       {!deepFocus &&
         floating.map((item) => (
@@ -304,8 +313,8 @@ const candidate: Floating = {
               top: `${item.y}%`,
               transform: "translate(-50%, -50%)",
               opacity: 0.12,
-fontSize: 13,
-letterSpacing: 0.5,
+              fontSize: 13,
+              letterSpacing: 0.5,
               pointerEvents: "none",
             }}
           >
@@ -313,10 +322,7 @@ letterSpacing: 0.5,
           </div>
         ))}
 
-
-
-      {/* CENTER */}
-
+      {/* CENTER UI */}
       <div
         style={{
           position: "relative",
@@ -329,13 +335,8 @@ letterSpacing: 0.5,
           gap: 14,
         }}
       >
-
-
-
-        {/* DEEP FOCUS */}
-
+        {/* DEEP FOCUS MODE */}
         {deepFocus ? (
-
           <>
             <div
               style={{
@@ -348,48 +349,38 @@ letterSpacing: 0.5,
               Slow Hours
             </div>
 
-
             <div
               style={{
                 fontSize: 82,
                 fontWeight: 200,
+                letterSpacing: 2,
               }}
             >
               {format(time)}
             </div>
 
-
             <button
+              onClick={() => setDeepFocus(false)}
               style={{
                 ...buttonStyle,
-                marginTop: 20,
+                marginTop: 30,
                 opacity: 0.5,
               }}
-              onClick={() => setDeepFocus(false)}
             >
-              exit
+              exit deep focus
             </button>
-
           </>
-
-
         ) : (
-
-
+          /* NORMAL MODE */
           <>
-
-
-
-            {/* TITLE */}
-
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
+                gap: 4,
               }}
             >
-
               <div
                 style={{
                   fontSize: 13,
@@ -401,7 +392,6 @@ letterSpacing: 0.5,
                 Slow Hours
               </div>
 
-
               <h1
                 style={{
                   fontWeight: 300,
@@ -410,13 +400,7 @@ letterSpacing: 0.5,
               >
                 let's focus
               </h1>
-
             </div>
-
-
-
-
-            {/* TIMER */}
 
             <div
               style={{
@@ -427,223 +411,166 @@ letterSpacing: 0.5,
               {format(time)}
             </div>
 
-
-
-
-            {/* PRESETS */}
-
+            {/* TIMER PRESETS */}
             {!running && (
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 12,
-                }}
-              >
-
-                {timerOptions.map((minutes) => (
-
-                  <button
-                    key={minutes}
-                    onClick={() => {
-                      setFocusMinutes(minutes);
-                      setTime(minutes * 60);
-                    }}
-
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color:
-                        focusMinutes === minutes
-                          ? "#fff"
-                          : "rgba(255,255,255,0.4)",
-                      cursor: "pointer",
-                      fontSize: 12,
-                      borderBottom:
-                        focusMinutes === minutes
-                          ? "1px solid white"
-                          : "1px solid transparent",
-                      padding: "5px",
-                    }}
-                  >
-                    {minutes}m
-
-                  </button>
-
-                ))}
-
-              </div>
-
-            )}
-
-
-
-
-
-
-            {/* TIMER BUTTONS */}
-
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-              }}
-            >
-
-              <button
-                style={buttonStyle}
-                onClick={() => setRunning(true)}
-              >
-                start
-              </button>
-
-
-              <button
-                style={buttonStyle}
-                onClick={() => setRunning(false)}
-              >
-                pause
-              </button>
-
-
-              <button
-                style={buttonStyle}
-                onClick={() => {
-                  setRunning(false);
-                  setTime(focusMinutes * 60);
-                }}
-              >
-                reset
-              </button>
-
-
-            </div>
-
-
-
-
-
-
-            {/* CONTROLS */}
-
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-              }}
-            >
-
-              <button
-                style={buttonStyle}
-                onClick={toggleRain}
-              >
-                {rainOn ? "rain off" : "rain on"}
-              </button>
-
-
-              <button
-                style={buttonStyle}
-                onClick={() => {
-                  setRunning(true);
-                  setDeepFocus(true);
-                }}
-              >
-                deep focus
-              </button>
-
-
-            </div>
-
-
-
-
-
-
-            {/* TASKS */}
-
-            <div
-              style={{
-                width: 340,
-                marginTop: 20,
-                background: "rgba(0,0,0,0.7)",
-                backdropFilter: "blur(12px)",
-                border:
-                  "1px solid rgba(255,255,255,0.08)",
-                padding: 14,
-                borderRadius: 12,
-              }}
-            >
-
-
               <div
                 style={{
                   display: "flex",
                   gap: 8,
                 }}
               >
+                {timerOptions.map((minutes) => (
+                  <button
+                    key={minutes}
+                    onClick={() => {
+                      setFocusMinutes(minutes);
+                      setTime(minutes * 60);
+                      setEndTime(null);
+                    }}
+                    style={{
+                      width: 42,
+                      height: 30,
+                      borderRadius: 15,
+                      cursor: "pointer",
+                      color: "#fff",
+                      border:
+                        focusMinutes === minutes
+                          ? "1px solid rgba(255,255,255,0.5)"
+                          : "1px solid rgba(255,255,255,0.15)",
+                      background:
+                        focusMinutes === minutes
+                          ? "rgba(255,255,255,0.15)"
+                          : "rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    {minutes}
+                  </button>
+                ))}
+              </div>
+            )}
 
+            {/* TIMER BUTTONS */}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <button
+                onClick={startTimer}
+                style={buttonStyle}
+              >
+                start
+              </button>
+
+              <button
+                onClick={pauseTimer}
+                style={buttonStyle}
+              >
+                pause
+              </button>
+
+              <button
+                onClick={resetTimer}
+                style={buttonStyle}
+              >
+                reset
+              </button>
+            </div>
+
+            {/* CONTROLS */}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+              }}
+            >
+              <button
+                onClick={toggleRain}
+                style={buttonStyle}
+              >
+                {rainOn ? "rain on" : "rain"}
+              </button>
+
+              <button
+                style={buttonStyle}
+                onClick={() => {
+                  if (!running) {
+                    startTimer();
+                  }
+
+                  setDeepFocus(true);
+                }}
+              >
+                deep focus
+              </button>
+            </div>
+
+            {/* TASKS */}
+            <div
+              style={{
+                width: 340,
+                marginTop: 20,
+                background: "rgba(0,0,0,0.7)",
+                backdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                padding: 14,
+                borderRadius: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                }}
+              >
                 <input
                   value={input}
-                  onChange={(e) =>
-                    setInput(e.target.value)
-                  }
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      addTask();
+                    }
+                  }}
                   placeholder="add task..."
                   style={{
                     flex: 1,
                     background: "transparent",
-                    color: "white",
-                    border:
-                      "1px solid rgba(255,255,255,0.15)",
-                    padding: 8,
-                    borderRadius: 8,
+                    border: "none",
+                    outline: "none",
+                    color: "#fff",
                   }}
                 />
 
-
                 <button
-                  style={iconButtonStyle}
                   onClick={addTask}
+                  style={iconButtonStyle}
                 >
                   +
                 </button>
-
-
               </div>
-
-
-
-
 
               <div
                 style={{
                   marginTop: 10,
                 }}
               >
-
                 {sortedTasks.map((task) => (
-
                   <div
                     key={task.id}
                     style={{
                       display: "flex",
-                      justifyContent:
-                        "space-between",
+                      justifyContent: "space-between",
                       alignItems: "center",
                       marginTop: 8,
-                      opacity:
-                        task.done ? 0.4 : 1,
-                      textDecoration:
-                        task.done
-                          ? "line-through"
-                          : "none",
+                      opacity: task.done ? 0.4 : 1,
+                      textDecoration: task.done
+                        ? "line-through"
+                        : "none",
                     }}
                   >
-
-
                     <span
-                      onClick={() =>
-                        toggleTask(task.id)
-                      }
+                      onClick={() => toggleTask(task.id)}
                       style={{
                         cursor: "pointer",
                       }}
@@ -651,37 +578,19 @@ letterSpacing: 0.5,
                       {task.text}
                     </span>
 
-
-
                     <button
+                      onClick={() => deleteTask(task.id)}
                       style={iconButtonStyle}
-                      onClick={() =>
-                        deleteTask(task.id)
-                      }
                     >
                       ×
                     </button>
-
-
                   </div>
-
                 ))}
-
-
               </div>
-
-
             </div>
-
-
           </>
-
         )}
-
-
       </div>
-
-
     </main>
   );
 }

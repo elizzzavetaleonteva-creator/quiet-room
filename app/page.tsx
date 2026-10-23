@@ -49,8 +49,8 @@ export default function Home() {
   const [deepFocus, setDeepFocus] = useState(false);
   const [rainOn, setRainOn] = useState(false);
 
-  const [focusMinutes, setFocusMinutes] = useState(30);
-  const [time, setTime] = useState(30 * 60);
+  const [focusMinutes, setFocusMinutes] = useState(15);
+  const [time, setTime] = useState(15 * 60);
   const [running, setRunning] = useState(false);
 
   // Точное время, когда таймер должен закончиться
